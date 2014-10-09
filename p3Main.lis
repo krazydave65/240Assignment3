@@ -1,0 +1,658 @@
+     1                                  ;========1=========2=========3=========4=========5=========6=========7=========8
+     2                                  ;Author information
+     3                                  ;  Author name: David Pedroza
+     4                                  ;  Author email: krazydave65@fullerton.edu
+     5                                  ;Course information
+     6                                  ;  Course number: CPSC240
+     7                                  ;  Assignment number: 3
+     8                                  ;  Due date: 2014-Sep-29
+     9                                  ;Project information
+    10                                  ;  Project title: Condensed Amortization Schedule
+    11                                  ;  Purpose: Find the total Current and Total Power by adding and diving ymm Registers
+    12                                  ;  Status: No known errors
+    13                                  ;  Project files: p3Driver.c, p3Main.asm, calc.c
+    14                                  ;Module information
+    15                                  ;  This module's call name: computeymmsum
+    16                                  ;  Language: X86-64
+    17                                  ;  Syntax: Intel
+    18                                  ;  Date last modified: 2014-Sept-28
+    19                                  ;  Purpose: This module will perform the addition of 4 qword fp numbers
+    20                                  ;  File name: p3Main.asm
+    21                                  ;  Status: In production.  No known errors.
+    22                                  ;  Future enhancements: None planned
+    23                                  ;Translator information
+    24                                  ;  Linux: nasm -f elf64 -l p3Main.lis -o p3Main.o p3Main.asm
+    25                                  
+    26                                  ;Format information
+    27                                  ;  Page width: 310 columns
+    28                                  ;  Begin comments: 28
+    29                                  ;  Optimal print specification: Landscape,  monospace, 8Â½x11 paper
+    30                                  ;
+    31                                  ;===== Begin code area ======================================================
+    32                                  extern printf, scanf ;External C function for writing to standard output device
+    33                                  
+    34                                  extern calc
+    35                                  
+    36                                  global p3            ;This makes p3Main callable by functions outside
+    37                                                       ;of this file.
+    38                                  
+    39                                  segment .bss
+    40 00000000 <res 0000033F>          regSave resb 831
+    41                                  
+    42                                  
+    43                                  segment .data        ;Place initialized data here
+    44                                  %include "debug.inc"
+    45                              <1> ;========1=========2=========3=========4=========5=========6=========7=========8=========9=========0=========1=========2=========3=========4=========5=========6=========7**
+    46                              <1> ;System Title:  Debugger for X86 assembly programs
+    47                              <1> ;Author: Floyd Holliday
+    48                              <1> ;Email: activeprofessor@yahoo.com
+    49                              <1> ;Status: Released for general use; bugs will be fixed when reported
+    50                              <1> ;This module file name: debug.inc
+    51                              <1> ;This module purpose: This file is an "include" file.  It allows data to pass directly from the calling statement to the subprogram.
+    52                              <1> ;Language: X86
+    53                              <1> ;Syntax: Intel
+    54                              <1> ;Date of last update: 2013-Dec-13
+    55                              <1> ;Source file structure: width is 140 characters; detailed comments begin in column 61.
+    56                              <1> ;Printing: best results are obtained using landscape orientation with 9 point (or less) monospaced font.
+    57                              <1> ;
+    58                              <1> ;Targeted user group: Assembly programmers enrolled in programming courses like CPSC240.
+    59                              <1> ;
+    60                              <1> ;Requirements: debug.asm must be assembled into debug.o  This file is not to be assembled; it is used as is.  Place this file in the 
+    61                              <1> ;directory along with debug.o and with other assembled object files.
+    62                              <1> ;
+    63                              <1> 
+    64                              <1> ;===== showregisters ======================================================================================================================
+    65                              <1> 
+    66                              <1> extern showregisterssubprogram
+    67                              <1> 
+    68                              <1> %macro showregisters 1
+    69                              <1>     push qword %1
+    70                              <1>     call showregisterssubprogram
+    71                              <1>     ;Question: Where is the pop corresponding to the push above?  Answer: In the ret statement.
+    72                              <1> %endmacro
+    73                              <1> 
+    74                              <1> ;===== showstack ==========================================================================================================================
+    75                              <1> 
+    76                              <1> extern showstacksubprogram
+    77                              <1> 
+    78                              <1> %macro dumpstack 3
+    79                              <1>     push rsp                                      ;Save the current value of rsp since rsp is very volatile
+    80                              <1>     push rbp                                      ;Save the current value of rbp for insurance
+    81                              <1>     push qword %3                                 ;number of qwords inside the stack
+    82                              <1>     push qword %2                                 ;number of qwords outside the stack
+    83                              <1>     push qword %1                                 ;an arbitrary integer created by the caller
+    84                              <1>     call showstacksubprogram
+    85                              <1>     ;Question: Where are the pops corresponding to five pushes above?  Answer: In the ret statement.
+    86                              <1> %endmacro
+    87                              <1> 
+    88                              <1> ;===== showfpu ============================================================================================================================
+    89                              <1> 
+    90                              <1> extern showfpusubprogram
+    91                              <1> 
+    92                              <1> %macro showfpuregisters 1
+    93                              <1>     push qword %1                                 ;Integer identifying this showing of the fpu registers.
+    94                              <1>     call showfpusubprogram
+    95                              <1>     ;Where are the pops corresponding to those pushes?
+    96                              <1> %endmacro
+    97                              <1> 
+    98                              <1> ;===== showxmm ============================================================================================================================
+    99                              <1> 
+   100                              <1> extern showxmmsubprogram
+   101                              <1> 
+   102                              <1> %macro showxmmregisters 1
+   103                              <1>      push qword %1
+   104                              <1>      call showxmmsubprogram
+   105                              <1> %endmacro
+   106                              <1> 
+   107                              <1> ;===== showymm ============================================================================================================================
+   108                              <1> 
+   109                              <1> extern showymmsubprogram
+   110                              <1> 
+   111                              <1> %macro showymmregisters 1
+   112                              <1>     push qword %1
+   113                              <1>     call showymmsubprogram
+   114                              <1> %endmacro
+   115                              <1> 
+   116                              <1> ;==========================================================================================================================================
+   117                              <1> 
+   118                              <1> ;How to use the debugger.
+   119                              <1> 
+   120                              <1> ;1.  Assemble the file debug.asm and thereby create an object file known as debug.o
+   121                              <1> 
+   122                              <1> ;2.  Place into one single directory this file, debug.inc, and debug.o, and as many addition source file as desired.
+   123                              <1> 
+   124                              <1> ;3.  Insert the statement < %include "debug.inc" > without angle brackets into an asm source file to be debugged.  Place the statement 
+   125                              <1> ;    before segment .data .
+   126                              <1> 
+   127                              <1> ;4.  In segment .text place debugging statements at places where you want to examen the contents of registers.  There are four kinds 
+   128                              <1> ;    of debug statements, namely: show the integer registers, show the system stack, show the fpu registers, and show the SSE2 
+   129                              <1> ;    registers.  Examples of each of the four kinds of debug statements are found below.
+   130                              <1> 
+   131                              <1> ;Example of debug statememts.
+   132                              <1> 
+   133                              <1> ;==============================================
+   134                              <1> ;  showregisters 33
+   135                              <1> ;==============================================
+   136                              <1> ;The statement above will show the contents of all 16 integer registers and the contents of the flags register.  The trailing number 33 
+   137                              <1> ;is arbitrary.  The number 33 in the example can be replaced with any integer, but it cannot be omitted.
+   138                              <1> 
+   139                              <1> ;==============================================
+   140                              <1> ;  dumpstack 88, 2, 5
+   141                              <1> ;==============================================
+   142                              <1> ;The statement above will show the contents the system stack beginning with 2 quadwords outside of the top of the stack and ending with
+   143                              <1> ;quadword #5 inside the stack for a total of 8 quadwords.  The first parameter 88 is an arbitrary integer selected by the programmer.
+   144                              <1> ;The second parameter 2 indicates the number of quadwords beyond the top to be displayed.  To display nothing outside of the stack set
+   145                              <1> ;the middle parameter to 0.  The last parameter 5 is the number of qwords after the top to be display.  The count is from 0 to 5, and
+   146                              <1> ;therefore, a 5 parameter will cause 6 qwords inside the stack to be outputted.
+   147                              <1> 
+   148                              <1> ;==============================================
+   149                              <1> ;  showfpuregisters 133
+   150                              <1> ;==============================================
+   151                              <1> ;The statement above will show the contents of all 8 fpu registers.  The parameter 133 is arbitrary and may be replaced by any integer,
+   152                              <1> ;but it cannot be omitted.
+   153                              <1> 
+   154                              <1> ;==============================================
+   155                              <1> ;  showxmmregisters 888
+   156                              <1> ;==============================================
+   157                              <1> ;The statement above will show the contents of all 16 SSE2 registers.  The parameter 888 is arbitrary and may be replaced by any integer,
+   158                              <1> ;but it cannot be omitted.
+   159                              <1> 
+   160                              <1> ;==============================================
+   161                              <1> ;  showymmregisters 225
+   162                              <1> ;==============================================
+   163                              <1> ;The statement above will show the contents of all 16 AVE registers.  The parameter 225 is arbitrary and may be replaced by any integer,
+   164                              <1> ;but it cannot be omitted.
+   165                              <1> 
+   166                              <1> 
+   167                              <1> 
+   168                              <1> 
+   169                              <1> ;To the 240 class:
+   170                              <1> ;This debug set of subprograms was derived from the original work of Dr Paul Carter.  He made a similar set of subprograms that could 
+   171                              <1> ;be easily included in any assembly program.  All of his work was written in X86-32m and unfortunately, he seems to have lost interest 
+   172                              <1> ;in updating his work.  You can and probably should visit his website: http://www.drpaulcarter.com/pcasm/.  There you may download the
+   173                              <1> ;original include files which he called "asm_io.inc" and "asm_io.asm".  They are inside a zip file.  He also has a free ebook there on 
+   174                              <1> ;X86-32 programming.  Yes, all the examples are 32-bit one, but the text description of instructions is still very helpful.  For 
+   175                              <1> ;instance, in his ebook you can read a concise description of many of the FPU87 instructions, that is, those instructions that act on
+   176                              <1> ;the st registers.  Yes, I am aware that others have tried to update his work to become relevant to 64-bit programming, but I still like
+   177                              <1> ;the original ebook.
+   178                              <1> 
+   179                              <1> ;Thus, Dr Carter's work was the foundation for the debug.inc and debug.asm files you are now reading.  For the curious, you may wonder 
+   180                              <1> ;what happens when an assembly program has to call a C++ function that requires more that 6 incoming parameters.  There is an example of
+   181                              <1> ;passing 9 parameters to printf in the "showregisterssubprogram", which is inside the file debug.asm.  Notice the registerformat1 requires 8 numeric
+   182                              <1> ;values be passed to printf in addition to passing the string registerformat1 in rdi.  
+   183                              <1> 
+   184                              <1> 
+   185                              <1> 
+   186                                  
+   187                                  ;===== Declare some messages =================================================
+   188                                  
+   189 00000000 57656C636F6D652074-     welcome1 db "Welcome to the bank of Catalina Island",10, 0
+   190 00000009 6F207468652062616E-
+   191 00000012 6B206F662043617461-
+   192 0000001B 6C696E612049736C61-
+   193 00000024 6E640A00           
+   194 00000028 446176696420506564-     welcome2 db "David Pedroza, Chief Loan Officer",10,10, 0
+   195 00000031 726F7A612C20436869-
+   196 0000003A 6566204C6F616E204F-
+   197 00000043 6666696365720A0A00 
+   198                                  
+   199 0000004C 506C6561736520656E-     promptInterest db "Please enter the current interest rate as a float number: ", 0
+   200 00000055 746572207468652063-
+   201 0000005E 757272656E7420696E-
+   202 00000067 746572657374207261-
+   203 00000070 746520617320612066-
+   204 00000079 6C6F6174206E756D62-
+   205 00000082 65723A2000         
+   206 00000087 456E74657220746865-     promptLoans db "Enter the amount of four loans: ",0
+   207 00000090 20616D6F756E74206F-
+   208 00000099 6620666F7572206C6F-
+   209 000000A2 616E733A2000       
+   210 000000A8 456E74657220746865-     promptMonths db "Enter the time of the loans as a whole number of months: ",0
+   211 000000B1 2074696D65206F6620-
+   212 000000BA 746865206C6F616E73-
+   213 000000C3 20617320612077686F-
+   214 000000CC 6C65206E756D626572-
+   215 000000D5 206F66206D6F6E7468-
+   216 000000DE 733A2000           
+   217 000000E2 436F6E64656E736564-     promptPrint db "Condensed amortization schedules for the four possible loans are as follows.",10,10,0
+   218 000000EB 20616D6F7274697A61-
+   219 000000F4 74696F6E2073636865-
+   220 000000FD 64756C657320666F72-
+   221 00000106 2074686520666F7572-
+   222 0000010F 20706F737369626C65-
+   223 00000118 206C6F616E73206172-
+   224 00000121 6520617320666F6C6C-
+   225 0000012A 6F77732E0A0A00     
+   226                                  
+   227 00000131 4C6F616E20616D6F75-     printLoanAmount db "Loan amounts  :          %1.2lf    %1.2lf    %1.2lf    %1.2lf",10,0
+   228 0000013A 6E747320203A202020-
+   229 00000143 202020202020202531-
+   230 0000014C 2E326C662020202025-
+   231 00000155 312E326C6620202020-
+   232 0000015E 25312E326C66202020-
+   233 00000167 2025312E326C660A00 
+   234 00000170 4D6F6E746C79207061-     printMonthlyPayment db "Montly payment amount:     %1.2lf    %1.2lf    %1.2lf    %1.2lf",10,0
+   235 00000179 796D656E7420616D6F-
+   236 00000182 756E743A2020202020-
+   237 0000018B 25312E326C66202020-
+   238 00000194 2025312E326C662020-
+   239 0000019D 202025312E326C6620-
+   240 000001A6 20202025312E326C66-
+   241 000001AF 0A00               
+   242 000001B1 496E74657265737420-     printInterestText db "Interest due by months: ",0
+   243 000001BA 647565206279206D6F-
+   244 000001C3 6E7468733A2000     
+   245 000001CA 20202025312E326C66-     printInterestDue db "   %1.2lf      %1.2lf       %1.2lf      %1.2lf",10,0
+   246 000001D3 20202020202025312E-
+   247 000001DC 326C66202020202020-
+   248 000001E5 2025312E326C662020-
+   249 000001EE 2020202025312E326C-
+   250 000001F7 660A00             
+   251 000001FA 090909202020202531-     printInterestDue2 db 9,9,9,"    %1.2lf      %1.2lf       %1.2lf     %1.2lf",10,0
+   252 00000203 2E326C662020202020-
+   253 0000020C 2025312E326C662020-
+   254 00000215 202020202025312E32-
+   255 0000021E 6C6620202020202531-
+   256 00000227 2E326C660A00       
+   257 0000022D 546F74616C20496E74-     printTotalInterest db "Total Interest:            %1.2lf       %1.2lf      %1.2lf     %1.2lf",10,0
+   258 00000236 65726573743A202020-
+   259 0000023F 202020202020202020-
+   260 00000248 25312E326C66202020-
+   261 00000251 2020202025312E326C-
+   262 0000025A 662020202020202531-
+   263 00000263 2E326C662020202020-
+   264 0000026C 25312E326C660A00   
+   265 00000274 546F74616C20696E74-     printDebug db "Total interest: %1.2lf",10,0
+   266 0000027D 65726573743A202531-
+   267 00000286 2E326C660A00       
+   268                                  
+   269                                  
+   270                                  ;================ Input formats ===========================================
+   271 0000028C 256C6600                singleFloat db "%lf",0
+   272 00000290 25312E326C6600          inputFormat db "%1.2lf",0
+   273 00000297 256C6400                monthsFormat db "%ld",0       ; input format
+   274 0000029B 0A25312E326C662020-     outputFormat db 10,"%1.2lf  %1.2lf  %1.2lf  %1.2lf",10,0
+   275 000002A4 25312E326C66202025-
+   276 000002AD 312E326C6620202531-
+   277 000002B6 2E326C660A00       
+   278 000002BC 25312E326C660A00        floatFormat db "%1.2lf",10,0
+   279                                  
+   280 000002C4 000000000000284000-     two dq 12.0, 12.0 ,12.0 ,12.0
+   281 000002CD 000000000028400000-
+   282 000002D6 000000002840000000-
+   283 000002DF 0000002840         
+   284 000002E4 000000000000000000-     zero dq 0.00, 0.00, 0.00, 0.00
+   285 000002ED 000000000000000000-
+   286 000002F6 000000000000000000-
+   287 000002FF 0000000000         
+   288                                  
+   289                                  segment .text                                    ;Place executable instructions in this segment.
+   290                                  
+   291                                  p3:                                              ;Entry point.  Execution begins here.
+   292                                  
+   293                                  
+   294                                  
+   295                                  
+   296                                  
+   297                                  
+   298                                  ;=========== Back up all the integer registers used in this program ==========
+   299                                  
+   300 00000000 55                      push       rbp                            ;Save a copy of the stack base pointer
+   301 00000001 4889E5                  mov        rbp, rsp                        ;We do this in order to be 100% compatible with C and C++.
+   302 00000004 53                      push       rbx                             ;Back up rbx
+   303 00000005 51                      push       rcx                             ;Back up rcx
+   304 00000006 52                      push       rdx                             ;Back up rdx
+   305 00000007 56                      push       rsi                             ;Back up rsi
+   306 00000008 57                      push       rdi                             ;Back up rdi
+   307 00000009 4150                    push       r8                              ;Back up r8
+   308 0000000B 4151                    push       r9                              ;Back up r9
+   309 0000000D 4152                    push       r10                             ;Back up r10
+   310 0000000F 4153                    push       r11                             ;Back up r11
+   311 00000011 4154                    push       r12                             ;Back up r12
+   312 00000013 4155                    push       r13                             ;Back up r13
+   313 00000015 4156                    push       r14                             ;Back up r14
+   314 00000017 4157                    push       r15                             ;Back up r15
+   315 00000019 9C                      pushf                                      ;Back up rflags
+   316                                  
+   317                                  
+   318                                  
+   319                                  
+   320                                  
+   321                                  
+   322                                  
+   323                                  ;=======================================================================
+   324                                  
+   325                                  ;=========== Begin the application here: ===============================
+   326                                  ;=======================================================================
+   327                                  
+   328                                  
+   329                                  
+   330                                  ;======== Welcome1 ==================================
+   331 0000001A B800000000              mov     rax, 0                       ;No data from SSE will be printed
+   332 0000001F 48BF-                   mov     rdi, welcome1                ;"Welcome to the bank of Catalina Island",10,0
+   333 00000021 [0000000000000000] 
+   334 00000029 E8(00000000)            call    printf                       ;Call a library function to make the output
+   335                                  
+   336                                  ;======== Welcome2 ==================================
+   337 0000002E B800000000              mov     rax, 0                       ;No data from SSE will be printed
+   338 00000033 48BF-                   mov     rdi, welcome2                ;"David Pedroza, Chief Loan Officer",10,0
+   339 00000035 [2800000000000000] 
+   340 0000003D E8(00000000)            call    printf                       ;Call a library function to make the output
+   341                                  
+   342                                  
+   343                                  ;======== promptIntrest ==================================
+   344 00000042 B800000000              mov     rax, 0                       ;No data from SSE will be printed
+   345 00000047 48BF-                   mov     rdi, promptInterest          ;"Please enter the current interest rate as a float number: ",10,0
+   346 00000049 [4C00000000000000] 
+   347 00000051 E8(00000000)            call    printf                       ;Call a library function to make the output
+   348                                  
+   349                                  
+   350                                  ;============== Interest Input =================================
+   351 00000056 6A00                    push qword 0                         ;reserve 8 bytes of storage for the incoming number
+   352 00000058 B800000000              mov  rax, 0                          ;SSE is NOT involved in this scanf operation
+   353 0000005D 48BF-                   mov  rdi,singleFloat                 ;"%lf"
+   354 0000005F [8C02000000000000] 
+   355 00000067 4889E6                  mov  rsi, rsp                        ;Give scanf a point to the reserved storage
+   356 0000006A E8(00000000)            call  scanf                          ;Call a library function to do the input work
+   357 0000006F C4627D193C24            vbroadcastsd  ymm15, [rsp]           ;broadcast interest to the ymm15 register
+   358 00000075 58                      pop rax                              ; pop --> [rsp]
+   359                                  
+   360                                  
+   361                                  ;============== 4x Loan inputs ==================================
+   362 00000076 B800000000              mov    rax, 0                        ;No data from SSE will be printed
+   363 0000007B 48BF-                   mov    rdi, promptLoans              ;"Enter the amount of four loans: "
+   364 0000007D [8700000000000000] 
+   365 00000085 E8(00000000)            call   printf                        ;Call a library function to make the output
+   366                                  
+   367 0000008A 6A00                    push qword 0                         ;reserve 8 bytes of storage for the incoming number
+   368 0000008C B800000000              mov  rax, 0                          ;SSE is NOT involved in this scanf operation
+   369 00000091 48BF-                   mov  rdi,singleFloat                 ;"%lf"
+   370 00000093 [8C02000000000000] 
+   371 0000009B 4889E6                  mov  rsi, rsp                        ;Give scanf a point to the reserved storage
+   372 0000009E E8(00000000)            call  scanf                          ;Call a library function to do the input work
+   373                                  
+   374 000000A3 6A00                    push qword 0                         ;reserve 8 bytes of storage for the incoming number
+   375 000000A5 B800000000              mov  rax, 0                          ;SSE is NOT involved in this scanf operation
+   376 000000AA 48BF-                   mov  rdi,singleFloat                 ;"%lf"
+   377 000000AC [8C02000000000000] 
+   378 000000B4 4889E6                  mov  rsi, rsp                        ; Give scanf a point to the reserved storage
+   379 000000B7 E8(00000000)            call  scanf
+   380                                                                       ; Call a library function to do the input work
+   381 000000BC 6A00                    push qword 0                         ; reserve 8 bytes of storage for the incoming number
+   382 000000BE B800000000              mov  rax, 0                          ; SSE is NOT involved in this scanf operation
+   383 000000C3 48BF-                   mov  rdi,singleFloat                 ; "%lf"
+   384 000000C5 [8C02000000000000] 
+   385 000000CD 4889E6                  mov  rsi, rsp                        ; Give scanf a point to the reserved storage
+   386 000000D0 E8(00000000)            call  scanf
+   387                                                                       ; Call a library function to do the input work
+   388 000000D5 6A00                    push qword 0                         ; reserve 8 bytes of storage for the incoming number
+   389 000000D7 B800000000              mov  rax, 0                          ; SSE is NOT involved in this scanf operation
+   390 000000DC 48BF-                   mov  rdi,singleFloat                 ; "%lf"
+   391 000000DE [8C02000000000000] 
+   392 000000E6 4889E6                  mov  rsi, rsp                        ; Give scanf a point to the reserved storage
+   393 000000E9 E8(00000000)            call  scanf                          ; Call a library function to do the input work
+   394                                  
+   395 000000EE C57D103424              vmovupd  ymm14,[rsp]                 ;move 4 values in stack to ymm14
+   396 000000F3 58                      pop    rax                           ;pop ---> [rsp]
+   397 000000F4 58                      pop    rax                           ;pop ---> [rsp]
+   398 000000F5 58                      pop    rax                           ;pop ---> [rsp]
+   399 000000F6 58                      pop    rax                           ;pop ---> [rsp]
+   400                                  
+   401                                  
+   402                                  ;============== Months Input =================================
+   403 000000F7 B800000000              mov    rax, 0                       ;No data from SSE will be printed
+   404 000000FC 48BF-                   mov    rdi, promptMonths            ;"Enter the time of the loans as a whole number of months: "
+   405 000000FE [A800000000000000] 
+   406 00000106 E8(00000000)            call   printf
+   407                                  
+   408 0000010B 6A00                    push qword 0                        ; reserve 8 bytes of storage for the incoming number
+   409 0000010D B800000000              mov  rax, 0                         ; SSE is NOT involved in this scanf operation
+   410 00000112 48BF-                   mov  rdi, monthsFormat              ;%ld
+   411 00000114 [9702000000000000] 
+   412 0000011C 4889E6                  mov  rsi, rsp                       ; Give scanf a point to the reserved storage
+   413 0000011F E8(00000000)            call  scanf                         ; Call a library function to do the input work
+   414                                  
+   415 00000124 4C8B2C24                mov  r13, [rsp]                     ; copy months to r13.... waiting to send to 4 loop
+   416                                  ;cvtsd2si r
+   417                                  
+   418 00000128 C4627D192C24            vbroadcastsd  ymm13, [rsp]          ; copy [rsp] to ymm13
+   419 0000012E 58                      pop    rax
+   420                                  
+   421                                  
+   422                                  
+   423                                  
+   424                                  ;============= Call Function for Loan 1 =====================================
+   425 0000012F 4C89EF                  mov rdi, r13                        ;rdi <-- copy r13 = months
+   426                                                                      ;function takes months from rdi
+   427                                  
+   428                                  
+   429 00000132 C4637D19F801            vextractf128  xmm0, ymm15, 1        ;position interest --> xmm0
+   430 00000138 C4637D19F201            vextractf128  xmm2, ymm14, 1        ;position loan to -->xmm1
+   431 0000013E 0F12CA                  movhlps       xmm1, xmm2
+   432                                  
+   433 00000141 E8(00000000)            call calc
+   434                                  
+   435 00000146 6A00                    push qword 0                        ;make space in stack
+   436 00000148 6A00                    push qword 0                        ;make space in stack
+   437 0000014A 6A00                    push qword 0                        ;make space in stack
+   438 0000014C 6A00                    push qword 0                        ;make space in stack
+   439                                  
+   440 0000014E 4889E6                  mov rsi, rsp                        ;
+   441 00000151 4883C618                add rsi, 24
+   442 00000155 F20F1106                movsd [rsi],xmm0
+   443                                  
+   444                                  ;============= Call Function for Loan 2 =====================================
+   445 00000159 4C89EF                  mov rdi, r13                         ;rdi <-- copy r13 = months
+   446                                                                       ;function takes months from rdi
+   447                                  
+   448                                  
+   449 0000015C C4637D19F801            vextractf128  xmm0, ymm15, 1         ;position interest --> xmm0
+   450 00000162 C4637D19F101            vextractf128  xmm1, ymm14, 1         ;position loan to -->xmm1
+   451                                  
+   452 00000168 E8(00000000)            call calc                            ;call the calc.c function
+   453                                  
+   454 0000016D 4889E2                  mov rdx, rsp                         ;move monthly_payment to register
+   455 00000170 4883C210                add rdx, 16
+   456 00000174 F20F1102                movsd [rdx],xmm0
+   457                                  
+   458                                  
+   459                                  ;============= Call Function for Loan 3 =====================================
+   460 00000178 4C89EF                  mov rdi, r13                        ;rdi <-- copy r13 = months
+   461                                                                      ;function takes months from rdi
+   462                                  
+   463                                  
+   464 0000017B C4637D19F801            vextractf128  xmm0, ymm15, 1        ;position interest --> xmm0
+   465 00000181 410F12CE                movhlps  xmm1, xmm14                ;position loan to -->xmm1
+   466                                  
+   467 00000185 E8(00000000)            call calc                           ;call the calc.c function
+   468                                  
+   469 0000018A 4889E1                  mov rcx, rsp                        ;move monthly_payment to register
+   470 0000018D 4883C108                add rcx, 8
+   471 00000191 F20F1101                movsd [rcx],xmm0
+   472                                  
+   473                                  
+   474                                  ;============= Call Function for Loan 4 =====================================
+   475 00000195 4C89EF                  mov rdi, r13                        ;rdi <-- copy r13 = months
+   476                                                                      ;function takes months from rdi
+   477                                  
+   478                                  
+   479 00000198 C4637D19F801            vextractf128  xmm0, ymm15, 1        ;position interest --> xmm0
+   480 0000019E F2410F10CE              movsd  xmm1, xmm14                  ;position loan to -->xmm1
+   481 000001A3 E8(00000000)            call calc
+   482 000001A8 F20F110424              movsd [rsp],xmm0                    ;move monthly_payment to register
+   483                                  
+   484                                  
+   485                                  
+   486                                  ;===== Moving Monthly Payments to ymm register ================
+   487 000001AD C57D100424              vmovupd ymm8, [rsp]                 ;monthly pay --> ymm8
+   488 000001B2 5B                      pop rbx                             ;pop --> register
+   489 000001B3 59                      pop rcx                             ;pop --> register
+   490 000001B4 5A                      pop rdx                             ;pop --> register
+   491 000001B5 5E                      pop rsi                             ;pop --> register
+   492                                  
+   493                                  
+   494                                  ;== Broadcast 2 --> ymm9 ============
+   495 000001B6 C57D100C25-             vmovupd ymm9, [two]
+   496 000001BB [C4020000]         
+   497                                  
+   498                                  ;== Broadcast 2 --> ymm12 ============
+   499 000001BF C57D102425-             vmovupd ymm12, [zero]
+   500 000001C4 [E4020000]         
+   501                                  
+   502                                  ;======== MESSAGE: the loans are as follows ==================
+   503 000001C8 B800000000              mov    rax, 0                       ;No data from SSE will be printed
+   504 000001CD 48BF-                   mov    rdi, promptPrint             ;"Condensed amortization schedules for the four possible loans are as follows."
+   505 000001CF [E200000000000000] 
+   506 000001D7 E8(00000000)            call   printf
+   507                                  
+   508                                  
+   509                                  ;======== Print Loan Amounts =================================
+   510 000001DC C4637D19F101            vextractf128  xmm1,ymm14, 1
+   511 000001E2 C5F812C1                vmovhlps      xmm0, xmm1
+   512 000001E6 C4637D19F300            vextractf128  xmm3,ymm14, 0
+   513 000001EC C5E812D3                vmovhlps      xmm2, xmm3
+   514                                  
+   515 000001F0 B804000000              mov    rax, 4                       ;No data from SSE will be printed
+   516 000001F5 48BF-                   mov    rdi, printLoanAmount         ;"Loan amounts  :    %1.2lf   %1.2lf   %1.2lf   %1.2lf"
+   517 000001F7 [3101000000000000] 
+   518 000001FF E8(00000000)            call   printf
+   519                                  
+   520                                  ;======== Print Monthly Payment =================================
+   521 00000204 C4637D19C101            vextractf128  xmm1,ymm8, 1          ;move ymm registers(monthly payment) to lower SSE
+   522 0000020A C5F812C1                vmovhlps      xmm0, xmm1            ; registers for printf
+   523 0000020E C4637D19C300            vextractf128  xmm3,ymm8, 0
+   524 00000214 C5E812D3                vmovhlps      xmm2, xmm3
+   525                                  
+   526 00000218 B804000000              mov    rax, 4                       ;No data from SSE will be printed
+   527 0000021D 48BF-                   mov    rdi, printMonthlyPayment     ;"Montly payment amount:     %1.2lf    %1.2lf    %1.2lf    %1.2lf"
+   528 0000021F [7001000000000000] 
+   529 00000227 E8(00000000)            call   printf
+   530                                  
+   531                                  ;====Print Interest Text===============================
+   532 0000022C B800000000              mov    rax, 0                      ;No data from SSE will be printed
+   533 00000231 48BF-                   mov    rdi, printInterestText      ;"Interest due by months:"
+   534 00000233 [B101000000000000] 
+   535 0000023B E8(00000000)            call   printf
+   536                                  
+   537                                  
+   538                                  
+   539                                  
+   540                                  
+   541                                  ;========= Initial Data Before for Loop=========================
+   542                                  ;===============================================================
+   543                                  ;****** First PAID INTEREST *********************
+   544 00000240 C4410559DE              vmulpd ymm11, ymm15, ymm14          ;paid_interest <--- mult balance * interest
+   545 00000245 C441255ED9              vdivpd ymm11,ymm9                   ;(BAL*INTEREST)/12 ---> ymm11
+   546                                  
+   547                                  ;===== Print Interest Due ============================
+   548 0000024A C4637D19D901            vextractf128  xmm1,ymm11, 1          ;move ymm registers(monthly payment) to lower SSE
+   549 00000250 C5F812C1                vmovhlps      xmm0, xmm1             ; registers for printf
+   550 00000254 C4637D19DB00            vextractf128  xmm3,ymm11, 0
+   551 0000025A C5E812D3                vmovhlps      xmm2, xmm3
+   552 0000025E B804000000              mov    rax, 4                       ;No data from SSE will be printed
+   553 00000263 48BF-                   mov    rdi, printInterestDue        ;"MESSAGE"
+   554 00000265 [CA01000000000000] 
+   555 0000026D E8(00000000)            call   printf
+   556                                  
+   557                                  ;****** Total INTEREST ************************
+   558 00000272 C4412558E4              vaddpd ymm12, ymm11, ymm12          ;add ymm12 with ymm11 ----> ymm12 for total interest
+   559                                  
+   560                                  ;****** PAID_BALANCE *********************
+   561 00000277 C4413D5CD3              vsubpd ymm10, ymm8, ymm11           ;paid_balance = MP - paid_interest
+   562                                  
+   563                                  ;****** BALANCE *********************
+   564                                                                      ;position interest --> xmm0
+   565 0000027C C4410D5CF2              vsubpd ymm14, ymm14, ymm10          ;balance = balance - paid_balance
+   566                                  
+   567                                  
+   568                                  
+   569                                  ;=======================================================================
+   570                                  ;=========== Inside the for-loop =========================================
+   571                                  ;========================================================================
+   572 00000281 41BE01000000            mov r14, 1
+   573 00000287 4D89EF                  mov r15, r13                        ;r15 <-- copy r13 = monthsValue
+   574                                  
+   575                                  topOfLoop:                          ;Beginning of For Loop
+   576 0000028A 4D39FE                  cmp r14, r15
+   577 0000028D 7D47                    jge exitLoop
+   578                                  
+   579                                  
+   580                                  
+   581                                  ;****** PAID INTEREST *********************
+   582 0000028F C4410559DE              vmulpd ymm11, ymm15, ymm14          ;paid_interest <--- mult balance * interest
+   583 00000294 C441255ED9              vdivpd ymm11,ymm9                   ;(BAL*INTEREST)/12 ---> ymm11
+   584                                  
+   585                                  
+   586                                  ;===== Print Interest Due ============================
+   587                                  
+   588 00000299 C4637D19D901            vextractf128  xmm1,ymm11, 1          ;move ymm registers(monthly payment) to lower SSE
+   589 0000029F C5F812C1                vmovhlps      xmm0, xmm1
+   590 000002A3 C4637D19DB00            vextractf128  xmm3,ymm11, 0
+   591 000002A9 C5E812D3                vmovhlps      xmm2, xmm3
+   592 000002AD B804000000              mov    rax, 4                       ;No data from SSE will be printed
+   593 000002B2 48BF-                   mov    rdi, printInterestDue2        ;" %1.2lf      %1.2lf       %1.2lf     %1.2lf"
+   594 000002B4 [FA01000000000000] 
+   595 000002BC E8(00000000)            call   printf
+   596                                  
+   597                                  
+   598                                  
+   599                                  ;****** Total INTEREST ************************
+   600 000002C1 C4412558E4              vaddpd ymm12, ymm11, ymm12           ;add registers to get total INTEREST
+   601                                  
+   602                                  
+   603                                  
+   604                                  ;****** PAID_BALANCE *********************
+   605 000002C6 C4413D5CD3              vsubpd ymm10, ymm8, ymm11           ;paid_balance = MP - paid_interest
+   606                                  
+   607                                  
+   608                                  
+   609                                  ;****** Total BALANCE *********************
+   610                                                                      ;position interest --> xmm0
+   611 000002CB C4410D5CF2              vsubpd ymm14, ymm14, ymm10          ;balance = balance - paid_balance
+   612                                  
+   613                                  
+   614 000002D0 4983C601                add r14, 1
+   615 000002D4 EBB4                    jmp topOfLoop
+   616                                  exitLoop:                           ; End of for loop
+   617                                  ;==============================================================
+   618                                  ;========= End of Loop =========================================
+   619                                  ;===============================================================
+   620                                  
+   621                                  
+   622 000002D6 C4637D19E101            vextractf128  xmm1,ymm12, 1          ;move ymm registers(monthly payment) to lower SSE
+   623 000002DC C5F812C1                vmovhlps      xmm0, xmm1             ;registers for printf
+   624 000002E0 C4637D19E300            vextractf128  xmm3,ymm12, 0
+   625 000002E6 C5E812D3                vmovhlps      xmm2, xmm3
+   626                                  
+   627                                  
+   628 000002EA B804000000              mov    rax, 4                       ;No data from SSE will be printed
+   629 000002EF 48BF-                   mov    rdi, printTotalInterest      ;"MESSAGE"
+   630 000002F1 [2D02000000000000] 
+   631 000002F9 E8(00000000)            call   printf
+   632                                  
+   633 000002FE C4637D19E000            vextractf128  xmm0,ymm12, 0         ;move lastvalue --> xmm0 to return to Driver
+   634                                  
+   635                                  
+   636                                  
+   637                                  ;=========== Restore GPR values and return to the caller ========================
+   638                                  
+   639 00000304 9D                      popf                                 ;Restore rflags
+   640 00000305 415F                    pop        r15                       ;Restore r15
+   641 00000307 415E                    pop        r14                       ;Restore r14
+   642 00000309 415D                    pop        r13                       ;Restore r13
+   643 0000030B 415C                    pop        r12                       ;Restore r12
+   644 0000030D 415B                    pop        r11                       ;Restore r11
+   645 0000030F 415A                    pop        r10                       ;Restore r10
+   646 00000311 4159                    pop        r9                        ;Restore r9
+   647 00000313 4158                    pop        r8                        ;Restore r8
+   648 00000315 5F                      pop        rdi                       ;Restore rdi
+   649 00000316 5E                      pop        rsi                       ;Restore rsi
+   650 00000317 5A                      pop        rdx                       ;Restore rdx
+   651 00000318 59                      pop        rcx                       ;Restore rcx
+   652 00000319 5B                      pop        rbx                       ;Restore rbx
+   653 0000031A 5D                      pop        rbp                       ;Restore rbp
+   654                                  
+   655 0000031B C3                      ret                                  ;Pop the integer stack and resume
+   656                                                                       ;execution at the address that was popped from the stack.
+   657                                  ;===== End of program avxdemo ============================================
+   658                                  ;========1=========2=========3=========4=========5=========6=========7====
